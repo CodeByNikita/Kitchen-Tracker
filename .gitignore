@@ -1,0 +1,39 @@
+# OS/editor files
+.DS_Store
+.vscode/
+.idea/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Java/Spring build outputs
+target/
+**/target/
+build/
+**/build/
+
+# Local H2 database files
+data/
+**/data/
+*.mv.db
+*.trace.db
+
+# Node/Vite build outputs
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+dist-ssr/
+**/dist-ssr/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
