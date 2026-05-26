@@ -4,28 +4,38 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import jakarta.persistence.ElementCollection;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 @Entity
 @Table(name = "saved_recipes")
 public class SavedRecipe {
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final TypeReference<List<String>> STRING_LIST = new TypeReference<>() {};
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String title;
-    @ElementCollection
-    private List<String> uses = new ArrayList<>();
-    @ElementCollection
-    private List<String> extraIngredients = new ArrayList<>();
-    @ElementCollection
     @Lob
-    private List<String> steps = new ArrayList<>();
+    @Column(name = "uses_json")
+    private String usesJson = "[]";
+    @Lob
+    @Column(name = "extra_ingredients_json")
+    private String extraIngredientsJson = "[]";
+    @Lob
+    @Column(name = "steps_json")
+    private String stepsJson = "[]";
     private int timeMinutes;
     private String difficulty;
     private LocalDateTime savedAt;
@@ -46,28 +56,31 @@ public class SavedRecipe {
         this.title = title;
     }
 
+    @Transient
     public List<String> getUses() {
-        return uses;
+        return parseList(usesJson);
     }
 
     public void setUses(List<String> uses) {
-        this.uses = uses;
+        this.usesJson = formatList(uses);
     }
 
+    @Transient
     public List<String> getExtraIngredients() {
-        return extraIngredients;
+        return parseList(extraIngredientsJson);
     }
 
     public void setExtraIngredients(List<String> extraIngredients) {
-        this.extraIngredients = extraIngredients;
+        this.extraIngredientsJson = formatList(extraIngredients);
     }
 
+    @Transient
     public List<String> getSteps() {
-        return steps;
+        return parseList(stepsJson);
     }
 
     public void setSteps(List<String> steps) {
-        this.steps = steps;
+        this.stepsJson = formatList(steps);
     }
 
     public int getTimeMinutes() {
@@ -92,5 +105,24 @@ public class SavedRecipe {
 
     public void setSavedAt(LocalDateTime savedAt) {
         this.savedAt = savedAt;
+    }
+
+    private static List<String> parseList(String value) {
+        if (value == null || value.isBlank()) {
+            return new ArrayList<>();
+        }
+        try {
+            return OBJECT_MAPPER.readValue(value, STRING_LIST);
+        } catch (JsonProcessingException ex) {
+            return new ArrayList<>();
+        }
+    }
+
+    private static String formatList(List<String> value) {
+        try {
+            return OBJECT_MAPPER.writeValueAsString(value == null ? List.of() : value);
+        } catch (JsonProcessingException ex) {
+            return "[]";
+        }
     }
 }
