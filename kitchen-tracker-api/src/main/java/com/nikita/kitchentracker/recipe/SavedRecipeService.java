@@ -17,10 +17,15 @@ public class SavedRecipeService {
     }
 
     public List<SavedRecipe> getSavedRecipes() {
-        return repository.findAllByOrderBySavedAtDesc();
+        return repository.findAllByOrderBySavedAtDesc().stream()
+                .filter(this::hasRecipeDetails)
+                .toList();
     }
 
     public SavedRecipe saveRecipe(RecipeSuggestion recipe) {
+        if (!hasRecipeDetails(recipe)) {
+            throw new IllegalArgumentException("Saved recipes must include ingredients and steps.");
+        }
         List<SavedRecipe> matches = repository.findAllByTitleIgnoreCase(recipe.getTitle());
         if (matches.isEmpty()) {
             return repository.save(toSavedRecipe(recipe));
@@ -61,5 +66,15 @@ public class SavedRecipeService {
         saved.setDifficulty(recipe.getDifficulty());
         saved.setSavedAt(LocalDateTime.now());
         return saved;
+    }
+
+    private boolean hasRecipeDetails(RecipeSuggestion recipe) {
+        return recipe.getUses() != null && !recipe.getUses().isEmpty()
+                && recipe.getSteps() != null && !recipe.getSteps().isEmpty();
+    }
+
+    private boolean hasRecipeDetails(SavedRecipe recipe) {
+        return recipe.getUses() != null && !recipe.getUses().isEmpty()
+                && recipe.getSteps() != null && !recipe.getSteps().isEmpty();
     }
 }

@@ -60,7 +60,7 @@ public class RecipeService {
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                     .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            return parseGeminiResponse(response);
+            return sanitizeResponse(parseGeminiResponse(response), ingredients);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Recipe generation was interrupted.", e);
@@ -122,6 +122,41 @@ public class RecipeService {
                 "category", ingredient.getCategory() == null ? "" : ingredient.getCategory().name(),
                 "expiryDate", ingredient.getExpiryDate() == null ? "" : ingredient.getExpiryDate().toString()
         );
+    }
+
+    private RecipeSuggestionResponse sanitizeResponse(
+            RecipeSuggestionResponse response,
+            List<RecipeIngredientDto> ingredients
+    ) {
+        List<String> ingredientNames = ingredients.stream()
+                .map(RecipeIngredientDto::getName)
+                .filter(name -> name != null && !name.isBlank())
+                .toList();
+        List<RecipeSuggestion> recipes = response.getRecipes().stream()
+                .filter(recipe -> recipe.getTitle() != null && !recipe.getTitle().isBlank())
+                .map(recipe -> sanitizeRecipe(recipe, ingredientNames))
+                .toList();
+        response.setRecipes(recipes);
+        return response;
+    }
+
+    private RecipeSuggestion sanitizeRecipe(RecipeSuggestion recipe, List<String> ingredientNames) {
+        List<String> uses = recipe.getUses() == null ? List.of() : recipe.getUses();
+        if (uses.isEmpty()) {
+            recipe.setUses(ingredientNames.stream().limit(3).toList());
+        }
+        if (recipe.getExtraIngredients() == null) {
+            recipe.setExtraIngredients(List.of());
+        }
+        List<String> steps = recipe.getSteps() == null ? List.of() : recipe.getSteps();
+        if (steps.isEmpty()) {
+            recipe.setSteps(List.of(
+                    "Prepare the listed ingredients.",
+                    "Cook gently until everything is hot and safe to eat.",
+                    "Taste, season, and serve."
+            ));
+        }
+        return recipe;
     }
 
     private RecipeSuggestionResponse parseGeminiResponse(HttpResponse<String> response) throws JsonProcessingException {
