@@ -13,7 +13,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 
@@ -27,14 +26,11 @@ public class SavedRecipe {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String title;
-    @Lob
-    @Column(name = "uses_json")
+    @Column(name = "uses_data", columnDefinition = "text")
     private String usesJson = "[]";
-    @Lob
-    @Column(name = "extra_ingredients_json")
+    @Column(name = "extra_ingredients_data", columnDefinition = "text")
     private String extraIngredientsJson = "[]";
-    @Lob
-    @Column(name = "steps_json")
+    @Column(name = "steps_data", columnDefinition = "text")
     private String stepsJson = "[]";
     private int timeMinutes;
     private String difficulty;
