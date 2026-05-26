@@ -302,12 +302,12 @@ function App() {
         const saved = savedRecipes.find(
           (current) => current.title.toLowerCase() === recipe.title.toLowerCase()
         );
-        if (saved?.id) {
-          await axios.delete(`${SAVED_RECIPE_API}/${saved.id}`);
-        }
         setSavedRecipes((current) =>
           current.filter((savedRecipe) => savedRecipe.title.toLowerCase() !== recipe.title.toLowerCase())
         );
+        if (saved?.id) {
+          axios.delete(`${SAVED_RECIPE_API}/${saved.id}`).catch(() => {});
+        }
         return;
       }
 
@@ -325,12 +325,8 @@ function App() {
 
   const handleDeleteSavedRecipe = async (id) => {
     setError(null);
-    try {
-      await axios.delete(`${SAVED_RECIPE_API}/${id}`);
-      setSavedRecipes((current) => current.filter((recipe) => recipe.id !== id));
-    } catch {
-      setError("Failed to remove saved recipe — please try again.");
-    }
+    setSavedRecipes((current) => current.filter((recipe) => recipe.id !== id));
+    axios.delete(`${SAVED_RECIPE_API}/${id}`).catch(() => {});
   };
 
   const saveNotificationTimes = async (notificationTimes) => {

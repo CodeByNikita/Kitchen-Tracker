@@ -562,7 +562,7 @@ dialog.recipe-modal {
 .heart-btn {
   border: 1px solid var(--border);
   background: var(--bg);
-  color: #e11d48;
+  color: var(--text);
   width: 34px;
   height: 34px;
   border-radius: 9999px;
@@ -575,13 +575,15 @@ dialog.recipe-modal {
 }
 
 .heart-btn:hover:not(:disabled) {
-  background: #ffe4e6;
-  border-color: #fda4af;
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .heart-btn.saved {
-  background: #ffe4e6;
-  border-color: #fda4af;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
 }
 
 .heart-btn:disabled {
