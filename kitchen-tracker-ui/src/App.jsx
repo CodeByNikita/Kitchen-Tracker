@@ -295,9 +295,22 @@ function App() {
     });
   };
 
-  const handleSaveRecipe = async (recipe) => {
+  const handleSaveRecipe = async (recipe, alreadySaved = false) => {
     setError(null);
     try {
+      if (alreadySaved) {
+        const saved = savedRecipes.find(
+          (current) => current.title.toLowerCase() === recipe.title.toLowerCase()
+        );
+        if (saved?.id) {
+          await axios.delete(`${SAVED_RECIPE_API}/${saved.id}`);
+        }
+        setSavedRecipes((current) =>
+          current.filter((savedRecipe) => savedRecipe.title.toLowerCase() !== recipe.title.toLowerCase())
+        );
+        return;
+      }
+
       const res = await axios.post(SAVED_RECIPE_API, recipe);
       setSavedRecipes((current) => {
         const withoutDuplicate = current.filter(

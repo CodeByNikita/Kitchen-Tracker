@@ -1,6 +1,7 @@
 package com.nikita.kitchentracker.recipe;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -20,13 +21,24 @@ public class SavedRecipeService {
     }
 
     public SavedRecipe saveRecipe(RecipeSuggestion recipe) {
-        return repository.findByTitleIgnoreCase(recipe.getTitle())
-                .map(existing -> updateRecipe(existing, recipe))
-                .orElseGet(() -> repository.save(toSavedRecipe(recipe)));
+        List<SavedRecipe> matches = repository.findAllByTitleIgnoreCase(recipe.getTitle());
+        if (matches.isEmpty()) {
+            return repository.save(toSavedRecipe(recipe));
+        }
+
+        SavedRecipe latest = matches.stream()
+                .max(Comparator.comparing(SavedRecipe::getSavedAt, Comparator.nullsFirst(Comparator.naturalOrder())))
+                .orElse(matches.get(0));
+        matches.stream()
+                .filter(saved -> !saved.getId().equals(latest.getId()))
+                .forEach(repository::delete);
+        return updateRecipe(latest, recipe);
     }
 
     public void deleteRecipe(Long id) {
-        repository.deleteById(id);
+        if (repository.existsById(id)) {
+            repository.deleteById(id);
+        }
     }
 
     private SavedRecipe updateRecipe(SavedRecipe saved, RecipeSuggestion recipe) {

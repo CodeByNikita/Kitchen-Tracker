@@ -13,4 +13,6 @@ public interface SavedRecipeRepository extends JpaRepository<SavedRecipe, Long> 
     List<SavedRecipe> findAllByOrderBySavedAtDesc();
 
     Optional<SavedRecipe> findByTitleIgnoreCase(String title);
+
+    List<SavedRecipe> findAllByTitleIgnoreCase(String title);
 }

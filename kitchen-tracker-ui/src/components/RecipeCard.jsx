@@ -2,6 +2,10 @@ import PropTypes from "prop-types";
 import { recipeShape } from "./recipeShape";
 
 function RecipeCard({ recipe, saved, onSave, onDelete }) {
+  const handleHeartClick = () => {
+    onSave(recipe, saved);
+  };
+
   return (
     <article className="recipe-card">
       <div className="recipe-card-top">
@@ -14,9 +18,8 @@ function RecipeCard({ recipe, saved, onSave, onDelete }) {
           {onSave && (
             <button
               className={`heart-btn ${saved ? "saved" : ""}`}
-              aria-label={saved ? "Recipe saved" : "Save recipe"}
-              disabled={saved}
-              onClick={() => onSave(recipe)}
+              aria-label={saved ? "Remove saved recipe" : "Save recipe"}
+              onClick={handleHeartClick}
             >
               {saved ? "♥" : "♡"}
             </button>
