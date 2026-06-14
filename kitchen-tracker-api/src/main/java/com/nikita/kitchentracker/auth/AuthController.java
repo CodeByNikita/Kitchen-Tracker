@@ -3,6 +3,7 @@ package com.nikita.kitchentracker.auth;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,6 +35,14 @@ public class AuthController {
     @GetMapping("/me")
     public AuthResponse me(@RequestHeader(name = "Authorization", required = false) String authorization) {
         return authService.currentUser(authorization);
+    }
+
+    @PutMapping("/profile")
+    public AuthResponse updateProfile(
+            @RequestHeader(name = "Authorization", required = false) String authorization,
+            @Valid @RequestBody ProfileRequest request
+    ) {
+        return authService.updateProfile(authorization, request);
     }
 
     @PostMapping("/logout")

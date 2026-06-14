@@ -50,6 +50,13 @@ public class AuthService {
         return new AuthResponse(null, user.getEmail(), displayName(user));
     }
 
+    public AuthResponse updateProfile(String authorization, ProfileRequest request) {
+        AppUser user = requireUser(authorization);
+        user.setDisplayName(normalizeDisplayName(request.getDisplayName(), user.getEmail()));
+        AppUser saved = userRepository.save(user);
+        return new AuthResponse(null, saved.getEmail(), displayName(saved));
+    }
+
     @Transactional
     public void logout(String authorization) {
         String token = extractToken(authorization);

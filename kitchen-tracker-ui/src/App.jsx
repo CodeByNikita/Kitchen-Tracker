@@ -191,6 +191,7 @@ function App() {
   const [shoppingLoading, setShoppingLoading] = useState(true);
   const [settings, setSettings] = useState(null);
   const [settingsSaving, setSettingsSaving] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
   const [sortBy, setSortBy] = useState("expiry");
   const [notifPermission, setNotifPermission] = useState(
     notifSupported ? Notification.permission : "denied"
@@ -494,6 +495,25 @@ function App() {
     saveNotificationTimes(times.length ? times : ["09:00"]);
   };
 
+  const handleSaveProfile = async (displayName) => {
+    setProfileSaving(true);
+    setError(null);
+    try {
+      const res = await axios.put(`${AUTH_API}/profile`, { displayName: displayName.trim() });
+      const nextAuth = {
+        ...auth,
+        displayName: res.data.displayName,
+        email: res.data.email,
+      };
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextAuth));
+      setAuth(nextAuth);
+    } catch {
+      setError("Failed to save profile — please try again.");
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
   const selectCategory = (cat) => {
     setFilterCategory(cat);
     setExpiringOnly(false);
@@ -721,11 +741,14 @@ function App() {
 
       {view === "settings" && (
         <NotificationSettings
+          profileName={auth?.displayName}
+          profileSaving={profileSaving}
           settings={settings}
           saving={settingsSaving}
           onAddTime={handleAddNotificationTime}
           onChangeTime={handleChangeNotificationTime}
           onRemoveTime={handleRemoveNotificationTime}
+          onSaveProfile={handleSaveProfile}
         />
       )}
 

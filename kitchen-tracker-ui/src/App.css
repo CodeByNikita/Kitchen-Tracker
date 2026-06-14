@@ -590,6 +590,24 @@ dialog.recipe-modal {
   margin-top: 1rem;
 }
 
+.settings-stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.profile-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.profile-form .field {
+  flex: 1 1 220px;
+  margin-top: 0;
+}
+
 .settings-time-row {
   display: flex;
   align-items: flex-end;
