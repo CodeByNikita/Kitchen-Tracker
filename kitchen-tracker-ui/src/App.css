@@ -838,3 +838,136 @@ input:focus, select:focus { border-color: var(--accent); }
   color: #ef4444;
   margin-top: 0.2rem;
 }
+
+@media (max-width: 720px) {
+  .app {
+    padding: max(1rem, env(safe-area-inset-top)) 1rem max(1.25rem, env(safe-area-inset-bottom));
+  }
+
+  .header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.875rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .header h1 {
+    font-size: clamp(2rem, 13vw, 3.25rem);
+    line-height: 0.95;
+  }
+
+  .subtitle {
+    font-size: 0.95rem;
+  }
+
+  .header-actions {
+    align-items: stretch;
+    justify-content: stretch;
+  }
+
+  .header-actions .btn-primary {
+    flex: 1 1 100%;
+    min-height: 48px;
+    font-size: 1rem;
+  }
+
+  .view-tabs,
+  .quick-add-buttons,
+  .filter-row {
+    flex-wrap: nowrap;
+    margin-inline: -1rem;
+    overflow-x: auto;
+    padding-inline: 1rem;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .view-tabs::-webkit-scrollbar,
+  .quick-add-buttons::-webkit-scrollbar,
+  .filter-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab,
+  .pill,
+  .expiring-toggle,
+  .quick-add-buttons .btn {
+    min-height: 42px;
+    flex: 0 0 auto;
+    font-size: 0.95rem;
+  }
+
+  .quick-add-panel {
+    align-items: flex-start;
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .recipe-panel,
+  .notif-prompt,
+  .error-banner {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .recipe-panel .btn,
+  .notif-prompt-actions,
+  .notif-prompt-actions .btn {
+    width: 100%;
+  }
+
+  .items-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .item-card {
+    border-radius: 10px;
+    padding: 1rem;
+  }
+
+  .card-actions .btn {
+    flex: 1 1 calc(50% - 0.4rem);
+    min-height: 42px;
+  }
+
+  dialog.modal {
+    border-radius: 14px;
+    max-height: calc(100dvh - 1rem);
+    padding: 1.25rem;
+    width: calc(100vw - 1rem);
+  }
+
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions,
+  .profile-form,
+  .settings-time-row,
+  .shopping-add {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .form-actions .btn,
+  .profile-form .btn,
+  .settings-time-row .btn,
+  .shopping-add .btn {
+    min-height: 44px;
+    width: 100%;
+  }
+
+  .settings-panel,
+  .shopping-list {
+    max-width: none;
+  }
+
+  .recipe-card-top {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .recipe-card-tools {
+    justify-content: space-between;
+  }
+}
