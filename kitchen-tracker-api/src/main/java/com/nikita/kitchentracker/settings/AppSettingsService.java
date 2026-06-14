@@ -24,6 +24,7 @@ public class AppSettingsService {
     public AppSettings getSettings(AppUser user) {
         AppSettings settings = repository.findByOwner(user).orElseGet(() -> {
             AppSettings created = new AppSettings();
+            created.setId(user.getId());
             created.setOwner(user);
             return repository.save(created);
         });

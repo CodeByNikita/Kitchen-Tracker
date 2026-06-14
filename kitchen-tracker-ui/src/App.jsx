@@ -39,6 +39,7 @@ const QUICK_PRESETS = [
 
 function AuthScreen({ onAuth }) {
   const [mode, setMode] = useState("login");
+  const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -49,8 +50,13 @@ function AuthScreen({ onAuth }) {
     setSubmitting(true);
     setAuthError(null);
     try {
-      const res = await axios.post(`${AUTH_API}/${mode}`, { email, password });
-      const auth = { token: res.data.token, email: res.data.email };
+      const payload = mode === "register" ? { displayName, email, password } : { email, password };
+      const res = await axios.post(`${AUTH_API}/${mode}`, payload);
+      const auth = {
+        token: res.data.token,
+        email: res.data.email,
+        displayName: res.data.displayName,
+      };
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(auth));
       onAuth(auth);
     } catch (err) {
@@ -77,6 +83,20 @@ function AuthScreen({ onAuth }) {
           </button>
         </div>
         <form onSubmit={submit}>
+          {mode === "register" && (
+            <label>
+              Name
+              <input
+                autoComplete="given-name"
+                maxLength="60"
+                name="given-name"
+                onChange={(event) => setDisplayName(event.target.value)}
+                placeholder="Nikita"
+                type="text"
+                value={displayName}
+              />
+            </label>
+          )}
           <label>
             Email
             <input
@@ -181,7 +201,11 @@ function App() {
     if (authToken) {
       axios.defaults.headers.common.Authorization = `Bearer ${authToken}`;
       axios.get(`${AUTH_API}/me`)
-        .then((res) => setAuth((current) => ({ ...current, email: res.data.email })))
+        .then((res) => setAuth((current) => ({
+          ...current,
+          displayName: res.data.displayName,
+          email: res.data.email,
+        })))
         .catch(() => {
           localStorage.removeItem(AUTH_STORAGE_KEY);
           setAuth(null);
@@ -510,7 +534,7 @@ function App() {
           </p>
         </div>
         <div className="header-actions">
-          <span className="account-email">{auth?.email}</span>
+          <span className="account-email">{auth?.displayName || "Account"}</span>
           <button className="btn btn-ghost" onClick={handleLogout}>Log out</button>
           <button className="btn btn-primary" onClick={() => setModalItem({})}>
             + Add Item

@@ -30,6 +30,7 @@ public class AuthService {
 
         AppUser user = new AppUser();
         user.setEmail(email);
+        user.setDisplayName(normalizeDisplayName(request.getDisplayName(), email));
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setCreatedAt(LocalDateTime.now());
         return createSession(userRepository.save(user));
@@ -46,7 +47,7 @@ public class AuthService {
 
     public AuthResponse currentUser(String authorization) {
         AppUser user = requireUser(authorization);
-        return new AuthResponse(null, user.getEmail());
+        return new AuthResponse(null, user.getEmail(), displayName(user));
     }
 
     @Transactional
@@ -73,7 +74,7 @@ public class AuthService {
         session.setUser(user);
         session.setCreatedAt(LocalDateTime.now());
         AuthSession saved = sessionRepository.save(session);
-        return new AuthResponse(saved.getToken(), user.getEmail());
+        return new AuthResponse(saved.getToken(), user.getEmail(), displayName(user));
     }
 
     private String newToken() {
@@ -91,5 +92,17 @@ public class AuthService {
 
     private String normalizeEmail(String email) {
         return email == null ? "" : email.trim().toLowerCase();
+    }
+
+    private String normalizeDisplayName(String displayName, String email) {
+        if (displayName != null && !displayName.isBlank()) {
+            return displayName.trim();
+        }
+        int at = email.indexOf('@');
+        return at > 0 ? email.substring(0, at) : email;
+    }
+
+    private String displayName(AppUser user) {
+        return normalizeDisplayName(user.getDisplayName(), user.getEmail());
     }
 }
