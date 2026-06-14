@@ -1,5 +1,20 @@
 import PropTypes from "prop-types";
 
+function normalizeTime(value) {
+  const trimmed = value.trim();
+  const compactMatch = /^([01]?\d|2[0-3])([0-5]\d)$/.exec(trimmed);
+  if (compactMatch) {
+    return `${compactMatch[1].padStart(2, "0")}:${compactMatch[2]}`;
+  }
+
+  const colonMatch = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec(trimmed);
+  if (colonMatch) {
+    return `${colonMatch[1].padStart(2, "0")}:${colonMatch[2]}`;
+  }
+
+  return null;
+}
+
 function NotificationSettings({
   profileName,
   profileSaving,
@@ -16,6 +31,18 @@ function NotificationSettings({
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     onSaveProfile(String(formData.get("displayName") ?? ""));
+  };
+
+  const commitTime = (event, index, currentTime) => {
+    const nextTime = normalizeTime(event.currentTarget.value);
+    if (!nextTime) {
+      event.currentTarget.value = currentTime;
+      return;
+    }
+    event.currentTarget.value = nextTime;
+    if (nextTime !== currentTime) {
+      onChangeTime(index, nextTime);
+    }
   };
 
   return (
@@ -55,16 +82,28 @@ function NotificationSettings({
               <label className="field settings-time-field">
                 <span>Reminder time {index + 1}</span>
                 <input
-                  type="time"
-                  value={time}
+                  aria-label={`Reminder time ${index + 1}`}
+                  defaultValue={time}
                   disabled={saving}
-                  onChange={(e) => onChangeTime(index, e.target.value)}
+                  inputMode="numeric"
+                  maxLength="5"
+                  onBlur={(event) => commitTime(event, index, time)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      event.currentTarget.blur();
+                    }
+                  }}
+                  pattern="([01]?[0-9]|2[0-3]):[0-5][0-9]"
+                  placeholder="09:00"
+                  type="text"
                 />
               </label>
               <button
                 className="btn btn-sm btn-danger"
                 disabled={saving || times.length === 1}
                 onClick={() => onRemoveTime(index)}
+                type="button"
               >
                 Remove
               </button>
@@ -72,14 +111,9 @@ function NotificationSettings({
           ))}
         </div>
 
-        <button className="btn btn-ghost add-time-btn" disabled={saving} onClick={onAddTime}>
+        <button className="btn btn-ghost add-time-btn" disabled={saving} onClick={onAddTime} type="button">
           + Add reminder
         </button>
-
-        <p className="settings-note">
-          For deployment, set cron-job.org to call the backend every hour. The backend only sends
-          once per reminder time per day.
-        </p>
       </section>
     </div>
   );
