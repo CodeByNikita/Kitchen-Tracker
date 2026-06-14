@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
+import PropTypes from "prop-types";
 import ItemCard from "./components/ItemCard";
 import ItemForm from "./components/ItemForm";
 import RecipeModal from "./components/RecipeModal";
@@ -18,6 +19,8 @@ const RECIPE_API = apiUrl("/api/recipes/suggest");
 const SAVED_RECIPE_API = apiUrl("/api/saved-recipes");
 const SETTINGS_API = apiUrl("/api/settings");
 const SHOPPING_API = apiUrl("/api/shopping-list");
+const AUTH_API = apiUrl("/api/auth");
+const AUTH_STORAGE_KEY = "kt_auth";
 
 const CATEGORIES = ["ALL", "DAIRY", "MEAT", "FISH", "VEG", "FRUIT", "PANTRY", "FROZEN", "OTHER"];
 const LOCATIONS = ["ALL", "FRIDGE", "FREEZER", "CUPBOARD"];
@@ -33,6 +36,81 @@ const QUICK_PRESETS = [
   { name: "Chicken", category: "MEAT", unit: "PACKETS", location: "FRIDGE" },
   { name: "Spinach", category: "VEG", unit: "BAGS", location: "FRIDGE" },
 ];
+
+function AuthScreen({ onAuth }) {
+  const [mode, setMode] = useState("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [authError, setAuthError] = useState(null);
+
+  const submit = async (event) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setAuthError(null);
+    try {
+      const res = await axios.post(`${AUTH_API}/${mode}`, { email, password });
+      const auth = { token: res.data.token, email: res.data.email };
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(auth));
+      onAuth(auth);
+    } catch (err) {
+      const message = err.response?.status === 409
+        ? "An account already exists for that email."
+        : "Check your email and password, then try again.";
+      setAuthError(message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <main className="auth-page">
+      <section className="auth-panel">
+        <h1>Kitchen Tracker</h1>
+        <p>Sign in to keep your kitchen separate from everyone else’s.</p>
+        <div className="auth-tabs">
+          <button className={mode === "login" ? "active" : ""} onClick={() => setMode("login")}>
+            Log in
+          </button>
+          <button className={mode === "register" ? "active" : ""} onClick={() => setMode("register")}>
+            Create account
+          </button>
+        </div>
+        <form onSubmit={submit}>
+          <label>
+            Email
+            <input
+              autoComplete="email"
+              onChange={(event) => setEmail(event.target.value)}
+              required
+              type="email"
+              value={email}
+            />
+          </label>
+          <label>
+            Password
+            <input
+              autoComplete={mode === "login" ? "current-password" : "new-password"}
+              minLength="8"
+              onChange={(event) => setPassword(event.target.value)}
+              required
+              type="password"
+              value={password}
+            />
+          </label>
+          {authError && <p className="auth-error">{authError}</p>}
+          <button className="btn btn-primary" disabled={submitting} type="submit">
+            {submitting ? "Please wait..." : mode === "login" ? "Log in" : "Create account"}
+          </button>
+        </form>
+      </section>
+    </main>
+  );
+}
+
+AuthScreen.propTypes = {
+  onAuth: PropTypes.func.isRequired,
+};
 
 function renderItems(
   loading,
@@ -63,6 +141,15 @@ function renderItems(
 }
 
 function App() {
+  const [auth, setAuth] = useState(() => {
+    const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+    try {
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      return null;
+    }
+  });
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -86,45 +173,64 @@ function App() {
   const [notifPermission, setNotifPermission] = useState(
     notifSupported ? Notification.permission : "denied"
   );
+  const authToken = auth?.token;
+
+  useEffect(() => {
+    if (authToken) {
+      axios.defaults.headers.common.Authorization = `Bearer ${authToken}`;
+      axios.get(`${AUTH_API}/me`)
+        .then((res) => setAuth((current) => ({ ...current, email: res.data.email })))
+        .catch(() => {
+          localStorage.removeItem(AUTH_STORAGE_KEY);
+          setAuth(null);
+        });
+    } else {
+      delete axios.defaults.headers.common.Authorization;
+    }
+  }, [authToken]);
 
   const requestNotifPermission = async () => {
     const result = await Notification.requestPermission();
     setNotifPermission(result);
   };
 
-  const pushSubscribed = usePushSubscription(notifPermission);
-  useExpiryNotifications(items, pushSubscribed);
+  const pushSubscribed = usePushSubscription(notifPermission, Boolean(authToken), auth?.email);
+  useExpiryNotifications(authToken ? items : [], pushSubscribed);
 
   const fetchItems = useCallback(() => {
+    if (!authToken) return;
     axios
       .get(ITEM_API)
       .then((res) => setItems(res.data))
       .catch(() => setError("Could not load items — is the backend running?"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [authToken]);
 
   const fetchSavedRecipes = useCallback(() => {
+    if (!authToken) return;
     axios
       .get(SAVED_RECIPE_API)
       .then((res) => setSavedRecipes(res.data))
       .catch(() => setError("Could not load saved recipes."))
       .finally(() => setSavedRecipesLoading(false));
-  }, []);
+  }, [authToken]);
 
   const fetchSettings = useCallback(() => {
+    if (!authToken) return;
     axios
       .get(SETTINGS_API)
       .then((res) => setSettings(res.data))
       .catch(() => setError("Could not load notification settings."));
-  }, []);
+  }, [authToken]);
 
   const fetchShoppingItems = useCallback(() => {
+    if (!authToken) return;
     axios
       .get(SHOPPING_API)
       .then((res) => setShoppingItems(res.data))
       .catch(() => setError("Could not load shopping list."))
       .finally(() => setShoppingLoading(false));
-  }, []);
+  }, [authToken]);
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
   useEffect(() => { fetchSavedRecipes(); }, [fetchSavedRecipes]);
@@ -374,6 +480,24 @@ function App() {
 
   const savedTitles = savedRecipes.map((recipe) => recipe.title.toLowerCase());
 
+  const handleLogout = async () => {
+    axios.post(`${AUTH_API}/logout`).catch(() => {});
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+    setAuth(null);
+    setItems([]);
+    setSavedRecipes([]);
+    setShoppingItems([]);
+    setSettings(null);
+    setLoading(true);
+    setSavedRecipesLoading(true);
+    setShoppingLoading(true);
+    setError(null);
+  };
+
+  if (!authToken) {
+    return <AuthScreen onAuth={setAuth} />;
+  }
+
   return (
     <div className="app">
       <header className="header">
@@ -383,9 +507,13 @@ function App() {
             {loading ? "Loading…" : `${filtered.length} of ${items.length} items`}
           </p>
         </div>
-        <button className="btn btn-primary" onClick={() => setModalItem({})}>
-          + Add Item
-        </button>
+        <div className="header-actions">
+          <span className="account-email">{auth?.email}</span>
+          <button className="btn btn-ghost" onClick={handleLogout}>Log out</button>
+          <button className="btn btn-primary" onClick={() => setModalItem({})}>
+            + Add Item
+          </button>
+        </div>
       </header>
 
       <nav className="view-tabs" aria-label="Main sections">

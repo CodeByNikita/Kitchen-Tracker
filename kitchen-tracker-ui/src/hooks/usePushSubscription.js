@@ -3,7 +3,7 @@ import axios from 'axios';
 import { apiUrl } from '../config';
 
 const PUSH_API = apiUrl('/api/push');
-const STORAGE_KEY = 'kt_push_subscribed';
+const storageKey = (identity) => `kt_push_subscribed_${identity || 'anonymous'}`;
 
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -16,12 +16,19 @@ function urlBase64ToUint8Array(base64String) {
   return output;
 }
 
-export function usePushSubscription(notifPermission) {
+export function usePushSubscription(notifPermission, enabled, identity) {
   const [subscribed, setSubscribed] = useState(
-    () => localStorage.getItem(STORAGE_KEY) === 'true'
+    () => localStorage.getItem(storageKey(identity)) === 'true'
   );
 
   useEffect(() => {
+    queueMicrotask(() => {
+      setSubscribed(localStorage.getItem(storageKey(identity)) === 'true');
+    });
+  }, [identity]);
+
+  useEffect(() => {
+    if (!enabled) return;
     if (notifPermission !== 'granted') return;
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
     if (subscribed) return;
@@ -35,7 +42,7 @@ export function usePushSubscription(notifPermission) {
           applicationServerKey: urlBase64ToUint8Array(vapidKey),
         });
         await axios.post(`${PUSH_API}/subscribe`, pushSub.toJSON());
-        localStorage.setItem(STORAGE_KEY, 'true');
+        localStorage.setItem(storageKey(identity), 'true');
         setSubscribed(true);
       } catch (e) {
         console.error('Push subscription failed:', e);
@@ -43,7 +50,7 @@ export function usePushSubscription(notifPermission) {
     }
 
     subscribe();
-  }, [notifPermission, subscribed]);
+  }, [enabled, identity, notifPermission, subscribed]);
 
   return subscribed;
 }

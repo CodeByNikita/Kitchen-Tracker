@@ -1,5 +1,6 @@
 package com.nikita.kitchentracker.push;
 
+import com.nikita.kitchentracker.auth.AppUser;
 import com.nikita.kitchentracker.model.PushSubscription;
 import com.nikita.kitchentracker.repository.PushSubscriptionRepository;
 import nl.martijndwars.webpush.Notification;
@@ -32,26 +33,27 @@ public class PushNotificationService {
         this.pushServiceProvider = pushServiceProvider;
     }
 
-    public void saveSubscription(PushSubscriptionDto dto) {
-        Optional<PushSubscription> existing = subscriptionRepo.findByEndpoint(dto.getEndpoint());
+    public void saveSubscription(AppUser user, PushSubscriptionDto dto) {
+        Optional<PushSubscription> existing = subscriptionRepo.findByEndpointAndOwner(dto.getEndpoint(), user);
         PushSubscription sub = existing.orElse(new PushSubscription());
+        sub.setOwner(user);
         sub.setEndpoint(dto.getEndpoint());
         sub.setP256dh(dto.getKeys().getP256dh());
         sub.setAuth(dto.getKeys().getAuth());
         subscriptionRepo.save(sub);
     }
 
-    public void deleteSubscription(String endpoint) {
-        subscriptionRepo.findByEndpoint(endpoint).ifPresent(subscriptionRepo::delete);
+    public void deleteSubscription(AppUser user, String endpoint) {
+        subscriptionRepo.findByEndpointAndOwner(endpoint, user).ifPresent(subscriptionRepo::delete);
     }
 
-    public void broadcastNotification(String title, String body, String tag) {
+    public void sendNotification(AppUser user, String title, String body, String tag) {
         PushService pushService = pushServiceProvider.getIfAvailable();
         if (pushService == null) {
-            log.info("Skipping push broadcast because VAPID keys are not configured.");
+            log.info("Skipping push notification because VAPID keys are not configured.");
             return;
         }
-        List<PushSubscription> subs = subscriptionRepo.findAll();
+        List<PushSubscription> subs = subscriptionRepo.findAllByOwner(user);
         if (subs.isEmpty()) return;
         String payload = buildPayload(title, body, tag);
         for (PushSubscription sub : subs) {

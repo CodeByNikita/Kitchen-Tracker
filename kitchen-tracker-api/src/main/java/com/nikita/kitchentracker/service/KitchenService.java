@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import com.nikita.kitchentracker.auth.AppUser;
 import com.nikita.kitchentracker.model.Category;
 import com.nikita.kitchentracker.model.Item;
 import com.nikita.kitchentracker.model.Location;
@@ -21,34 +22,37 @@ public class KitchenService {
     }
 
     // get all items
-    public List<Item> getAllItems() {
-        return repository.findAll();
+    public List<Item> getAllItems(AppUser user) {
+        return repository.findByOwnerOrderByIdDesc(user);
     }
 
     // get one item by id
-    public Optional<Item> getItemById(Long id) {
-        return repository.findById(id);
+    public Optional<Item> getItemById(AppUser user, Long id) {
+        return repository.findByIdAndOwner(id, user);
     }
 
     // add a new item
-    public Item addItem(Item item) {
+    public Item addItem(AppUser user, Item item) {
+        item.setOwner(user);
         return repository.save(item);
     }
 
     // update an existing item
-    public Item updateItem(Long id, Item updatedItem) {
+    public Item updateItem(AppUser user, Long id, Item updatedItem) {
+        repository.findByIdAndOwner(id, user).orElseThrow();
         updatedItem.setId(id);
+        updatedItem.setOwner(user);
         return repository.save(updatedItem);
     }
 
     // delete an item
-    public void deleteItem(Long id) {
-        repository.deleteById(id);
+    public void deleteItem(AppUser user, Long id) {
+        repository.findByIdAndOwner(id, user).ifPresent(repository::delete);
     }
 
     // mark as opened
-    public Optional<Item> markAsOpened(Long id) {
-        Optional<Item> found = repository.findById(id);
+    public Optional<Item> markAsOpened(AppUser user, Long id) {
+        Optional<Item> found = repository.findByIdAndOwner(id, user);
         found.ifPresent(item -> {
             item.setDateOpened(LocalDate.now());
             repository.save(item);
@@ -56,8 +60,8 @@ public class KitchenService {
         return found;
     }
 
-    public Optional<Item> useOne(Long id) {
-        Optional<Item> found = repository.findById(id);
+    public Optional<Item> useOne(AppUser user, Long id) {
+        Optional<Item> found = repository.findByIdAndOwner(id, user);
         found.ifPresent(item -> {
             int nextQuantity = Math.max(0, item.getQuantity() - 1);
             item.setQuantity(nextQuantity);
@@ -67,24 +71,24 @@ public class KitchenService {
     }
 
     // filter by category
-    public List<Item> getByCategory(Category category) {
-        return repository.findByCategory(category);
+    public List<Item> getByCategory(AppUser user, Category category) {
+        return repository.findByOwnerAndCategory(user, category);
     }
 
     // filter by location
-    public List<Item> getByLocation(Location location) {
-        return repository.findByLocation(location);
+    public List<Item> getByLocation(AppUser user, Location location) {
+        return repository.findByOwnerAndLocation(user, location);
     }
 
     // expiring soon (exclusive upper bound — items before cutoff)
-    public List<Item> getExpiringSoon(int daysAhead) {
+    public List<Item> getExpiringSoon(AppUser user, int daysAhead) {
         LocalDate cutoff = LocalDate.now().plusDays(daysAhead);
-        return repository.findByExpiryDateBefore(cutoff);
+        return repository.findByOwnerAndExpiryDateBefore(user, cutoff);
     }
 
     // expiring soon inclusive — includes today+daysAhead and expired items
-    public List<Item> getExpiringSoonInclusive(int daysAhead) {
+    public List<Item> getExpiringSoonInclusive(AppUser user, int daysAhead) {
         LocalDate cutoff = LocalDate.now().plusDays(daysAhead);
-        return repository.findByExpiryDateLessThanEqual(cutoff);
+        return repository.findByOwnerAndExpiryDateLessThanEqual(user, cutoff);
     }
 }

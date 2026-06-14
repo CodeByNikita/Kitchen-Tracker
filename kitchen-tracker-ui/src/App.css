@@ -23,6 +23,92 @@
   margin-top: 0.25rem;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.account-email {
+  color: var(--text);
+  font-size: 0.75rem;
+}
+
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+}
+
+.auth-panel {
+  width: min(420px, 100%);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  padding: 1.5rem;
+}
+
+.auth-panel h1 {
+  margin: 0;
+}
+
+.auth-panel p {
+  color: var(--text);
+  margin: 0.5rem 0 1rem;
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.auth-tabs button {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.5rem;
+  cursor: pointer;
+}
+
+.auth-tabs button.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.auth-panel form {
+  display: grid;
+  gap: 0.875rem;
+}
+
+.auth-panel label {
+  display: grid;
+  gap: 0.3rem;
+  color: var(--text-h);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.auth-panel input {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-h);
+  font: inherit;
+  padding: 0.625rem 0.75rem;
+}
+
+.auth-error {
+  color: #b91c1c;
+  font-size: 0.8rem;
+}
+
 /* ── Buttons ── */
 .btn {
   padding: 0.5rem 1rem;

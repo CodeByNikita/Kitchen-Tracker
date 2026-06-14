@@ -7,6 +7,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+import com.nikita.kitchentracker.auth.AppUser;
+import com.nikita.kitchentracker.auth.AuthService;
+
 @RestController
 @RequestMapping("/api/push")
 public class PushController {
@@ -18,13 +21,16 @@ public class PushController {
 
     private final PushNotificationService pushNotificationService;
     private final NotificationScheduler notificationScheduler;
+    private final AuthService authService;
 
     public PushController(
             PushNotificationService pushNotificationService,
-            NotificationScheduler notificationScheduler
+            NotificationScheduler notificationScheduler,
+            AuthService authService
     ) {
         this.pushNotificationService = pushNotificationService;
         this.notificationScheduler = notificationScheduler;
+        this.authService = authService;
     }
 
     @GetMapping("/vapid-public-key")
@@ -40,16 +46,22 @@ public class PushController {
 
     @PostMapping("/subscribe")
     @ResponseStatus(HttpStatus.CREATED)
-    public void subscribe(@RequestBody PushSubscriptionDto dto) {
-        pushNotificationService.saveSubscription(dto);
+    public void subscribe(
+            @RequestHeader(name = "Authorization", required = false) String authorization,
+            @RequestBody PushSubscriptionDto dto
+    ) {
+        pushNotificationService.saveSubscription(user(authorization), dto);
     }
 
     @DeleteMapping("/subscribe")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void unsubscribe(@RequestBody Map<String, String> body) {
+    public void unsubscribe(
+            @RequestHeader(name = "Authorization", required = false) String authorization,
+            @RequestBody Map<String, String> body
+    ) {
         String endpoint = body.get("endpoint");
         if (endpoint != null) {
-            pushNotificationService.deleteSubscription(endpoint);
+            pushNotificationService.deleteSubscription(user(authorization), endpoint);
         }
     }
 
@@ -68,5 +80,9 @@ public class PushController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Invalid notification cron token.");
         }
         return notificationScheduler.runExpiryAlertJobIfDue(force);
+    }
+
+    private AppUser user(String authorization) {
+        return authService.requireUser(authorization);
     }
 }

@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.nikita.kitchentracker.auth.AppUser;
 import com.nikita.kitchentracker.repository.SavedRecipeRepository;
 
 @Service
@@ -16,19 +17,19 @@ public class SavedRecipeService {
         this.repository = repository;
     }
 
-    public List<SavedRecipe> getSavedRecipes() {
-        return repository.findAllByOrderBySavedAtDesc().stream()
+    public List<SavedRecipe> getSavedRecipes(AppUser user) {
+        return repository.findAllByOwnerOrderBySavedAtDesc(user).stream()
                 .filter(this::hasRecipeDetails)
                 .toList();
     }
 
-    public SavedRecipe saveRecipe(RecipeSuggestion recipe) {
+    public SavedRecipe saveRecipe(AppUser user, RecipeSuggestion recipe) {
         if (!hasRecipeDetails(recipe)) {
             throw new IllegalArgumentException("Saved recipes must include ingredients and steps.");
         }
-        List<SavedRecipe> matches = repository.findAllByTitleIgnoreCase(recipe.getTitle());
+        List<SavedRecipe> matches = repository.findAllByOwnerAndTitleIgnoreCase(user, recipe.getTitle());
         if (matches.isEmpty()) {
-            return repository.save(toSavedRecipe(recipe));
+            return repository.save(toSavedRecipe(user, recipe));
         }
 
         SavedRecipe latest = matches.stream()
@@ -40,10 +41,8 @@ public class SavedRecipeService {
         return updateRecipe(latest, recipe);
     }
 
-    public void deleteRecipe(Long id) {
-        if (repository.existsById(id)) {
-            repository.deleteById(id);
-        }
+    public void deleteRecipe(AppUser user, Long id) {
+        repository.findByIdAndOwner(id, user).ifPresent(repository::delete);
     }
 
     private SavedRecipe updateRecipe(SavedRecipe saved, RecipeSuggestion recipe) {
@@ -56,8 +55,9 @@ public class SavedRecipeService {
         return repository.save(saved);
     }
 
-    private SavedRecipe toSavedRecipe(RecipeSuggestion recipe) {
+    private SavedRecipe toSavedRecipe(AppUser user, RecipeSuggestion recipe) {
         SavedRecipe saved = new SavedRecipe();
+        saved.setOwner(user);
         saved.setTitle(recipe.getTitle());
         saved.setUses(recipe.getUses());
         saved.setExtraIngredients(recipe.getExtraIngredients());

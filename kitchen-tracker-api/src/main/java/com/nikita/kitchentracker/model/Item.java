@@ -2,12 +2,15 @@ package com.nikita.kitchentracker.model;
 
 import java.time.LocalDate;
 
+import com.nikita.kitchentracker.auth.AppUser;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 @Entity
@@ -16,6 +19,8 @@ public class Item {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @ManyToOne
+    private AppUser owner;
     private String name;
     private int quantity;
     @Enumerated(EnumType.STRING)
@@ -45,6 +50,14 @@ public class Item {
 
     public String getName() {
         return name;
+    }
+
+    public AppUser getOwner() {
+        return owner;
+    }
+
+    public void setOwner(AppUser owner) {
+        this.owner = owner;
     }
 
     public void setName(String name) {

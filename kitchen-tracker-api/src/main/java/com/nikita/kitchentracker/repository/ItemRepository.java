@@ -2,10 +2,12 @@ package com.nikita.kitchentracker.repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import com.nikita.kitchentracker.auth.AppUser;
 import com.nikita.kitchentracker.model.Category;
 import com.nikita.kitchentracker.model.Item;
 import com.nikita.kitchentracker.model.Location;
@@ -13,12 +15,16 @@ import com.nikita.kitchentracker.model.Location;
 @Repository
 public interface ItemRepository extends JpaRepository<Item, Long> {
 
-    List<Item> findByCategory(Category category);
+    List<Item> findByOwnerOrderByIdDesc(AppUser owner);
 
-    List<Item> findByLocation(Location location);
+    Optional<Item> findByIdAndOwner(Long id, AppUser owner);
 
-    List<Item> findByExpiryDateBefore(LocalDate date);
+    List<Item> findByOwnerAndCategory(AppUser owner, Category category);
 
-    List<Item> findByExpiryDateLessThanEqual(LocalDate date);
+    List<Item> findByOwnerAndLocation(AppUser owner, Location location);
+
+    List<Item> findByOwnerAndExpiryDateBefore(AppUser owner, LocalDate date);
+
+    List<Item> findByOwnerAndExpiryDateLessThanEqual(AppUser owner, LocalDate date);
 
 }

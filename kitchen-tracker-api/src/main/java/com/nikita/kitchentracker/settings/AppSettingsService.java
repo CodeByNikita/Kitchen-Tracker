@@ -9,21 +9,24 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import com.nikita.kitchentracker.auth.AppUser;
 import com.nikita.kitchentracker.model.AppSettings;
 import com.nikita.kitchentracker.repository.AppSettingsRepository;
 
 @Service
 public class AppSettingsService {
-    private static final Long SETTINGS_ID = 1L;
-
     private final AppSettingsRepository repository;
 
     public AppSettingsService(AppSettingsRepository repository) {
         this.repository = repository;
     }
 
-    public AppSettings getSettings() {
-        AppSettings settings = repository.findById(SETTINGS_ID).orElseGet(() -> repository.save(new AppSettings()));
+    public AppSettings getSettings(AppUser user) {
+        AppSettings settings = repository.findByOwner(user).orElseGet(() -> {
+            AppSettings created = new AppSettings();
+            created.setOwner(user);
+            return repository.save(created);
+        });
         if (settings.getNotificationTimes() == null || settings.getNotificationTimes().isEmpty()) {
             settings.setNotificationTimes(new ArrayList<>(List.of(LocalTime.of(9, 0))));
             return repository.save(settings);
@@ -31,12 +34,12 @@ public class AppSettingsService {
         return settings;
     }
 
-    public AppSettings updateNotificationTime(LocalTime notificationTime) {
-        return updateNotificationTimes(notificationTime == null ? List.of() : List.of(notificationTime));
+    public AppSettings updateNotificationTime(AppUser user, LocalTime notificationTime) {
+        return updateNotificationTimes(user, notificationTime == null ? List.of() : List.of(notificationTime));
     }
 
-    public AppSettings updateNotificationTimes(List<LocalTime> notificationTimes) {
-        AppSettings settings = getSettings();
+    public AppSettings updateNotificationTimes(AppUser user, List<LocalTime> notificationTimes) {
+        AppSettings settings = getSettings(user);
         List<LocalTime> source = notificationTimes == null ? List.of() : notificationTimes;
         List<LocalTime> cleaned = source.stream()
                 .filter(time -> time != null)
@@ -47,8 +50,8 @@ public class AppSettingsService {
         return repository.save(settings);
     }
 
-    public Optional<LocalTime> nextDueNotificationTime(LocalDate today, LocalTime now) {
-        AppSettings settings = getSettings();
+    public Optional<LocalTime> nextDueNotificationTime(AppUser user, LocalDate today, LocalTime now) {
+        AppSettings settings = getSettings(user);
         if (!today.equals(settings.getLastNotificationDate())) {
             settings.setLastNotificationDate(today);
             settings.setSentNotificationTimes(new ArrayList<>());
@@ -65,8 +68,8 @@ public class AppSettingsService {
                 .min(Comparator.naturalOrder());
     }
 
-    public void markNotificationSent(LocalDate today, LocalTime notificationTime) {
-        AppSettings settings = getSettings();
+    public void markNotificationSent(AppUser user, LocalDate today, LocalTime notificationTime) {
+        AppSettings settings = getSettings(user);
         settings.setLastNotificationDate(today);
         List<LocalTime> sent = settings.getSentNotificationTimes() == null
                 ? new ArrayList<>()
